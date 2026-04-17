@@ -188,36 +188,45 @@
     <section class="py-5 bg-light" id="interactive-demo">
         <div class="container py-5">
             <h2 class="section-title" data-aos="fade-right">Interactive Sandbox: Anticipating the Swerve</h2>
-            <p class="mb-4" data-aos="fade-right" data-aos-delay="100">Adjust the road hazard severity and driving culture to see how the GCN-Transformer model predicts driver trajectories in real-time.</p>
+            <p class="mb-4" data-aos="fade-right" data-aos-delay="100">Adjust the hazard severity and driving culture. Watch how the GCN-Transformer models not just the pothole, but the <strong>surrounding traffic graph</strong> to predict secondary collision risks.</p>
             
             <div class="dashboard-container" data-aos="zoom-in" data-aos-delay="200">
-                <div class="sim-area">
-                    <canvas id="adasCanvas" width="300" height="350"></canvas>
+                <div class="sim-area" style="position: relative;">
+                    <canvas id="adasCanvas" width="300" height="400"></canvas>
+                    <div id="riskAlert" class="position-absolute bottom-0 w-100 text-center py-2" style="background: rgba(239, 68, 68, 0.9); font-weight: bold; color: white; display: none; font-size: 0.9rem;">
+                        ⚠️ CRITICAL: Swerve trajectory intersects with adjacent agent!
+                    </div>
                 </div>
                 <div class="control-panel">
                     <div class="row align-items-center">
-                        <div class="col-md-6 mb-4 mb-md-0">
-                            <label for="hazardSlider" class="form-label fw-bold">Hazard Severity (Depth/Width)</label>
+                        <div class="col-md-5 mb-4 mb-md-0">
+                            <label for="hazardSlider" class="form-label fw-bold text-light">Hazard Severity (Depth/Width)</label>
                             <input type="range" class="form-range" id="hazardSlider" min="1" max="10" value="5">
                             
-                            <label for="cultureSelect" class="form-label fw-bold mt-3">Traffic Culture Model</label>
+                            <label for="cultureSelect" class="form-label fw-bold mt-3 text-light">Traffic Culture Model</label>
                             <select class="form-select bg-dark text-white border-secondary" id="cultureSelect">
-                                <option value="india">Heterogeneous / Adaptive (India)</option>
-                                <option value="japan">Orderly / Risk-Averse (Japan)</option>
+                                <option value="india">Heterogeneous (India) - Dense, No Lane Discipline</option>
+                                <option value="japan">Orderly (Japan) - Strict Lane Discipline</option>
                             </select>
                         </div>
-                        <div class="col-md-6">
-                            <div class="row">
-                                <div class="col-6">
+                        <div class="col-md-7">
+                            <div class="row g-2">
+                                <div class="col-4">
                                     <div class="metric-card">
-                                        <div class="text-muted small text-uppercase">Probability of Swerve</div>
-                                        <div class="metric-value" id="valProbability">65%</div>
+                                        <div class="text-muted small text-uppercase" style="font-size: 0.7rem;">Swerve Prob.</div>
+                                        <div class="metric-value fs-3" id="valProbability">65%</div>
                                     </div>
                                 </div>
-                                <div class="col-6">
+                                <div class="col-4">
                                     <div class="metric-card">
-                                        <div class="text-muted small text-uppercase">Proactive Lead Time</div>
-                                        <div class="metric-value" id="valTime">+1.2s</div>
+                                        <div class="text-muted small text-uppercase" style="font-size: 0.7rem;">Secondary Risk</div>
+                                        <div class="metric-value fs-3" id="valRisk">Low</div>
+                                    </div>
+                                </div>
+                                <div class="col-4">
+                                    <div class="metric-card">
+                                        <div class="text-muted small text-uppercase" style="font-size: 0.7rem;">Proactive Gain</div>
+                                        <div class="metric-value fs-3" id="valTime">+1.2s</div>
                                     </div>
                                 </div>
                             </div>
@@ -303,95 +312,162 @@
         // Initialize Animations
         AOS.init({ once: true, offset: 50, duration: 800 });
 
-        // --- Interactive Canvas Dashboard Logic ---
+        // --- Advanced Interactive Canvas Dashboard Logic ---
         const canvas = document.getElementById('adasCanvas');
         const ctx = canvas.getContext('2d');
         const slider = document.getElementById('hazardSlider');
         const culture = document.getElementById('cultureSelect');
         const valProb = document.getElementById('valProbability');
         const valTime = document.getElementById('valTime');
+        const valRisk = document.getElementById('valRisk');
+        const riskAlert = document.getElementById('riskAlert');
+
+        // Drawing Helper Functions
+        function drawEgoVehicle(x, y) {
+            ctx.fillStyle = '#0ea5e9'; // Blue Ego
+            ctx.shadowColor = '#0284c7'; ctx.shadowBlur = 10;
+            ctx.fillRect(x - 15, y, 30, 50);
+            ctx.shadowBlur = 0; // reset
+            ctx.fillStyle = '#fde047'; // Headlights
+            ctx.fillRect(x - 15, y, 8, 5); ctx.fillRect(x + 7, y, 8, 5);
+        }
+
+        function drawCar(x, y, color) {
+            ctx.fillStyle = color;
+            ctx.fillRect(x - 12, y, 24, 45);
+            ctx.fillStyle = '#94a3b8'; // Windshield
+            ctx.fillRect(x - 10, y + 10, 20, 12);
+        }
+
+        function drawBike(x, y) {
+            ctx.fillStyle = '#10b981'; // Green rider
+            ctx.beginPath(); ctx.arc(x, y + 15, 6, 0, Math.PI * 2); ctx.fill(); // Helmet
+            ctx.fillStyle = '#334155'; // Bike body
+            ctx.fillRect(x - 3, y + 5, 6, 25); 
+        }
+
+        function drawAutoRickshaw(x, y) {
+            ctx.fillStyle = '#eab308'; // Yellow top
+            ctx.fillRect(x - 14, y, 28, 35);
+            ctx.fillStyle = '#1e293b'; // Windshield
+            ctx.fillRect(x - 12, y + 5, 24, 8);
+        }
 
         function drawSimulation() {
             const severity = parseInt(slider.value);
             const isIndia = culture.value === 'india';
             
+            // Core Coordinates
+            const egoX = 100; // Left lane
+            const egoY = 320;
+            const hazardX = 100;
+            const hazardY = 120;
+            
             // Clear Canvas
             ctx.clearRect(0, 0, canvas.width, canvas.height);
             
             // Draw Road
-            ctx.fillStyle = '#475569';
-            ctx.fillRect(50, 0, 200, 350);
+            ctx.fillStyle = '#334155';
+            ctx.fillRect(40, 0, 220, 400);
             
             // Draw Dashed Center Line
             ctx.setLineDash([20, 15]);
             ctx.beginPath();
-            ctx.moveTo(150, 0);
-            ctx.lineTo(150, 350);
-            ctx.strokeStyle = '#cbd5e1';
-            ctx.lineWidth = 3;
-            ctx.stroke();
+            ctx.moveTo(150, 0); ctx.lineTo(150, 400);
+            ctx.strokeStyle = '#cbd5e1'; ctx.lineWidth = 3; ctx.stroke();
             ctx.setLineDash([]); // reset
 
-            // Draw Hazard (Pothole)
-            const hazardY = 100;
-            const hazardRadius = 10 + (severity * 2.5);
+            // Draw Hazard (Pothole/Defect)
+            const hazardRadius = 8 + (severity * 2.5);
             ctx.beginPath();
-            ctx.ellipse(150, hazardY, hazardRadius, hazardRadius * 0.6, 0, 0, Math.PI * 2);
-            ctx.fillStyle = severity > 7 ? '#ef4444' : (severity > 4 ? '#f59e0b' : '#10b981');
+            ctx.ellipse(hazardX, hazardY, hazardRadius, hazardRadius * 0.7, 0, 0, Math.PI * 2);
+            ctx.fillStyle = severity > 7 ? '#ef4444' : (severity > 4 ? '#f59e0b' : '#3b82f6');
             ctx.fill();
-            ctx.strokeStyle = '#000';
-            ctx.lineWidth = 2;
-            ctx.stroke();
+            ctx.strokeStyle = 'rgba(0,0,0,0.5)'; ctx.lineWidth = 2; ctx.stroke();
 
-            // Calculate Predictions based on Culture & Severity
+            // Draw Contextual Traffic Agents
+            if (isIndia) {
+                // Heterogeneous Traffic: Filtering bikes, misaligned autos
+                drawBike(135, 220);         // Two-wheeler filtering the lane line
+                drawAutoRickshaw(165, 80);  // Auto slightly straddling lanes ahead
+                drawBike(60, 260);          // Another bike passing on the extreme left
+            } else {
+                // Orderly Traffic: Cars perfectly aligned in the right lane
+                drawCar(200, 150, '#64748b'); // Car in adjacent lane
+                drawCar(200, 300, '#475569'); // Car trailing in adjacent lane
+            }
+
+            // Predictive Logic Calculations
             let swerveOffset = 0;
             let prob = 0;
             let timeAdvantage = 0;
+            let secondaryRisk = false;
 
             if (isIndia) {
-                // Adaptive: Swerves earlier, takes wider paths
-                prob = Math.min(100, severity * 12);
-                if (severity > 2) swerveOffset = (severity * 6) + 20; 
-                timeAdvantage = (severity * 0.15) + 0.5;
+                prob = Math.min(95, severity * 12);
+                if (severity > 2) swerveOffset = (severity * 5) + 10; 
+                timeAdvantage = (severity * 0.15) + 0.4;
+                
+                // Risk calculation: If swerving right, does it hit the filtering bike at x=135?
+                if (swerveOffset > 15) { secondaryRisk = true; }
             } else {
-                // Orderly: Less likely to swerve aggressively, prefers braking unless severe
-                prob = Math.min(100, severity * 8);
-                if (severity > 5) swerveOffset = (severity * 4) + 10;
-                timeAdvantage = (severity * 0.1) + 0.3;
+                prob = Math.min(85, severity * 8);
+                if (severity > 5) swerveOffset = (severity * 4) + 5;
+                timeAdvantage = (severity * 0.1) + 0.2;
+                
+                // Risk calculation: Does it cross the center line (150) into the car at 200?
+                if (egoX + swerveOffset > 160) { secondaryRisk = true; }
             }
 
-            // Update DOM Metrics
+            // Update Dashboard Metrics
             valProb.innerText = Math.round(prob) + '%';
             valTime.innerText = '+' + timeAdvantage.toFixed(1) + 's';
-            valProb.style.color = prob > 70 ? '#ef4444' : '#38bdf8';
-
-            // Draw Predicted Trajectory (The "Anticipation")
-            const startX = 150;
-            const startY = 300;
+            valProb.style.color = prob > 75 ? '#ef4444' : '#38bdf8';
             
+            if (secondaryRisk) {
+                valRisk.innerText = 'HIGH';
+                valRisk.style.color = '#ef4444';
+                riskAlert.style.display = 'block';
+            } else {
+                valRisk.innerText = 'LOW';
+                valRisk.style.color = '#10b981';
+                riskAlert.style.display = 'none';
+            }
+
+            // Draw Predicted Trajectory (The "GCN Anticipation")
             ctx.beginPath();
-            ctx.moveTo(startX, startY);
+            ctx.moveTo(egoX, egoY);
             
             if (swerveOffset > 0) {
-                // Curve around hazard
-                const controlX = 150 + (swerveOffset * 1.5);
-                ctx.quadraticCurveTo(controlX, 200, 150 + swerveOffset, 50);
+                // S-Curve around hazard
+                const controlX = egoX + (swerveOffset * 1.5);
+                ctx.quadraticCurveTo(controlX, 220, egoX + swerveOffset, 60);
+                ctx.strokeStyle = secondaryRisk ? 'rgba(239, 68, 68, 0.9)' : 'rgba(56, 189, 248, 0.8)';
             } else {
                 // Straight path (braking)
-                ctx.lineTo(150, hazardY + hazardRadius + 10);
+                ctx.lineTo(egoX, hazardY + hazardRadius + 15);
+                ctx.strokeStyle = 'rgba(16, 185, 129, 0.8)'; // Green for safe stop
             }
             
-            ctx.strokeStyle = 'rgba(56, 189, 248, 0.8)';
             ctx.lineWidth = 4;
+            // Add dashed effect to trajectory line to imply "prediction"
+            ctx.setLineDash([8, 6]); 
             ctx.stroke();
+            ctx.setLineDash([]); // reset
+            
+            // Draw Collision Marker if High Risk
+            if (secondaryRisk) {
+                ctx.beginPath();
+                ctx.arc(egoX + swerveOffset, 220, 20, 0, Math.PI * 2);
+                ctx.fillStyle = 'rgba(239, 68, 68, 0.3)';
+                ctx.fill();
+                ctx.strokeStyle = '#ef4444';
+                ctx.lineWidth = 2;
+                ctx.stroke();
+            }
 
-            // Draw Ego Vehicle
-            ctx.fillStyle = '#0ea5e9';
-            ctx.fillRect(135, 290, 30, 50);
-            // Draw headlights
-            ctx.fillStyle = '#fde047';
-            ctx.fillRect(135, 290, 8, 5);
-            ctx.fillRect(157, 290, 8, 5);
+            // Finally, Draw Ego Vehicle
+            drawEgoVehicle(egoX, egoY);
         }
 
         // Event Listeners
