@@ -1,1 +1,405 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Anticipating the Swerve | JST LOTUS Project</title>
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.2/dist/css/bootstrap.min.css" rel="stylesheet">
+    <link href="https://unpkg.com/aos@2.3.1/dist/aos.css" rel="stylesheet">
+    <style>
+        :root {
+            --primary-color: #0d6efd;
+            --dark-bg: #0f172a;
+            --accent: #38bdf8;
+        }
+        body {
+            font-family: 'Segoe UI', Roboto, Helvetica, Arial, sans-serif;
+            color: #333;
+            overflow-x: hidden;
+        }
+        .hero {
+            background: linear-gradient(135deg, var(--dark-bg) 0%, #1e293b 100%);
+            color: white;
+            padding: 120px 0 80px;
+            position: relative;
+        }
+        .hero-badge {
+            background: rgba(56, 189, 248, 0.1);
+            color: var(--accent);
+            border: 1px solid var(--accent);
+            padding: 5px 15px;
+            border-radius: 20px;
+            font-size: 0.9rem;
+            font-weight: 600;
+            display: inline-block;
+            margin-bottom: 20px;
+        }
+        .section-title {
+            font-weight: 700;
+            margin-bottom: 40px;
+            position: relative;
+            display: inline-block;
+        }
+        .section-title::after {
+            content: '';
+            position: absolute;
+            left: 0;
+            bottom: -10px;
+            width: 50px;
+            height: 4px;
+            background-color: var(--primary-color);
+        }
+        .comparison-table {
+            background: white;
+            border-radius: 12px;
+            box-shadow: 0 10px 30px rgba(0,0,0,0.05);
+            overflow: hidden;
+        }
+        .comparison-table th { background: var(--dark-bg); color: white; padding: 20px; }
+        .comparison-table td { padding: 15px 20px; vertical-align: middle; border-bottom: 1px solid #eee; }
+        .comparison-table tr:last-child td { border-bottom: none; }
+        
+        /* Interactive Dashboard Styles */
+        .dashboard-container {
+            background: var(--dark-bg);
+            border-radius: 16px;
+            overflow: hidden;
+            box-shadow: 0 20px 40px rgba(0,0,0,0.2);
+            color: white;
+        }
+        .sim-area {
+            background: #1e293b;
+            height: 400px;
+            position: relative;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            border-bottom: 1px solid #334155;
+        }
+        canvas { background: #334155; border-radius: 8px; box-shadow: inset 0 0 20px rgba(0,0,0,0.5); }
+        .control-panel { padding: 30px; }
+        .metric-card {
+            background: rgba(255,255,255,0.05);
+            border: 1px solid rgba(255,255,255,0.1);
+            border-radius: 8px;
+            padding: 15px;
+            text-align: center;
+        }
+        .metric-value { font-size: 2rem; font-weight: 700; color: var(--accent); }
+        
+        .phase-card {
+            border: none;
+            border-radius: 12px;
+            box-shadow: 0 5px 15px rgba(0,0,0,0.05);
+            transition: transform 0.3s ease;
+            height: 100%;
+        }
+        .phase-card:hover { transform: translateY(-5px); }
+        .phase-number {
+            font-size: 3rem;
+            font-weight: 800;
+            color: rgba(13, 110, 253, 0.1);
+            position: absolute;
+            top: 10px;
+            right: 20px;
+        }
+        .culture-box {
+            padding: 30px;
+            border-radius: 12px;
+            background: #f8f9fa;
+            height: 100%;
+            border-left: 5px solid var(--primary-color);
+        }
+    </style>
+</head>
+<body>
 
+    <section class="hero text-center text-lg-start">
+        <div class="container">
+            <div class="row align-items-center">
+                <div class="col-lg-6" data-aos="fade-right">
+                    <div class="hero-badge">JST LOTUS Fellowship Research</div>
+                    <h1 class="display-4 fw-bold mb-4">Anticipating the Swerve: Proactive ADAS for Complex Traffic</h1>
+                    <p class="lead mb-4 text-light opacity-75">Shifting from reactive collision avoidance to proactive risk mitigation by linking static road infrastructure to dynamic human behavior.</p>
+                    <a href="#interactive-demo" class="btn btn-primary btn-lg px-4 me-2">Try Interactive Demo</a>
+                    <a href="#architecture" class="btn btn-outline-light btn-lg px-4">View Architecture</a>
+                </div>
+                <div class="col-lg-6 mt-5 mt-lg-0" data-aos="fade-left">
+                    <div class="p-4 bg-dark rounded-3 shadow border border-secondary text-center" style="min-height: 350px; display: flex; align-items: center; justify-content: center; flex-direction: column;">
+                        <svg xmlns="http://www.w3.org/2000/svg" width="64" height="64" fill="var(--accent)" class="bi bi-camera-video mb-3" viewBox="0 0 16 16">
+                            <path fill-rule="evenodd" d="M0 5a2 2 0 0 1 2-2h7.5a2 2 0 0 1 1.983 1.738l3.11-1.382A1 1 0 0 1 16 4.269v7.462a1 1 0 0 1-1.406.913l-3.111-1.382A2 2 0 0 1 9.5 13H2a2 2 0 0 1-2-2V5zm11.5 5.175 3.5 1.556V4.269l-3.5 1.556v4.35zM2 4a1 1 0 0 0-1 1v6a1 1 0 0 0 1 1h7.5a1 1 0 0 0 1-1V5a1 1 0 0 0-1-1H2z"/>
+                        </svg>
+                        <h5 class="text-white">Vision-LiDAR Fusion Placeholder</h5>
+                        <p class="text-muted small">[Insert overlay animation: Standard camera view of a pothole transitioning into a 3D LiDAR point cloud highlighting depth.]</p>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </section>
+
+    <section class="py-5" id="paradigm">
+        <div class="container py-5">
+            <div class="row mb-5">
+                <div class="col-lg-8 mx-auto text-center" data-aos="fade-up">
+                    <h2 class="section-title">The Paradigm Shift</h2>
+                    <p class="lead">Current ADAS works for orderly traffic but fails in chaotic, heterogeneous environments because it ignores the causal link between road condition and driver reaction. Our model is the first to connect Road Infrastructure Geometry directly to Driver Behavior Prediction.</p>
+                </div>
+            </div>
+            
+            <div class="row" data-aos="fade-up" data-aos-delay="100">
+                <div class="col-12">
+                    <div class="comparison-table table-responsive">
+                        <table class="table table-borderless mb-0">
+                            <thead>
+                                <tr>
+                                    <th>Feature</th>
+                                    <th class="text-center text-muted">Existing: Infrastructure</th>
+                                    <th class="text-center text-muted">Existing: Driver Behavior</th>
+                                    <th class="text-center text-primary">Proposed: Proactive ADAS</th>
+                                </tr>
+                            </thead>
+                            <tbody>
+                                <tr>
+                                    <td>Analyzes Road Infrastructure Geometry in 3D?</td>
+                                    <td class="text-center">✅</td>
+                                    <td class="text-center">❌</td>
+                                    <td class="text-center"><strong>✅</strong></td>
+                                </tr>
+                                <tr>
+                                    <td>Models Driver Maneuver Behavior?</td>
+                                    <td class="text-center">❌</td>
+                                    <td class="text-center">✅</td>
+                                    <td class="text-center"><strong>✅</strong></td>
+                                </tr>
+                                <tr>
+                                    <td>Models the Interaction & Anticipates Risk?</td>
+                                    <td class="text-center">❌</td>
+                                    <td class="text-center">❌</td>
+                                    <td class="text-center"><strong>✅</strong></td>
+                                </tr>
+                            </tbody>
+                        </table>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </section>
+
+    <section class="py-5 bg-light" id="interactive-demo">
+        <div class="container py-5">
+            <h2 class="section-title" data-aos="fade-right">Interactive Sandbox: Anticipating the Swerve</h2>
+            <p class="mb-4" data-aos="fade-right" data-aos-delay="100">Adjust the road hazard severity and driving culture to see how the GCN-Transformer model predicts driver trajectories in real-time.</p>
+            
+            <div class="dashboard-container" data-aos="zoom-in" data-aos-delay="200">
+                <div class="sim-area">
+                    <canvas id="adasCanvas" width="300" height="350"></canvas>
+                </div>
+                <div class="control-panel">
+                    <div class="row align-items-center">
+                        <div class="col-md-6 mb-4 mb-md-0">
+                            <label for="hazardSlider" class="form-label fw-bold">Hazard Severity (Depth/Width)</label>
+                            <input type="range" class="form-range" id="hazardSlider" min="1" max="10" value="5">
+                            
+                            <label for="cultureSelect" class="form-label fw-bold mt-3">Traffic Culture Model</label>
+                            <select class="form-select bg-dark text-white border-secondary" id="cultureSelect">
+                                <option value="india">Heterogeneous / Adaptive (India)</option>
+                                <option value="japan">Orderly / Risk-Averse (Japan)</option>
+                            </select>
+                        </div>
+                        <div class="col-md-6">
+                            <div class="row">
+                                <div class="col-6">
+                                    <div class="metric-card">
+                                        <div class="text-muted small text-uppercase">Probability of Swerve</div>
+                                        <div class="metric-value" id="valProbability">65%</div>
+                                    </div>
+                                </div>
+                                <div class="col-6">
+                                    <div class="metric-card">
+                                        <div class="text-muted small text-uppercase">Proactive Lead Time</div>
+                                        <div class="metric-value" id="valTime">+1.2s</div>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </section>
+
+    <section class="py-5" id="architecture">
+        <div class="container py-5">
+            <h2 class="section-title text-center d-block mx-auto mb-5" data-aos="fade-up">The Three-Phase Architecture</h2>
+            
+            <div class="row g-4">
+                <div class="col-md-4" data-aos="fade-up" data-aos-delay="100">
+                    <div class="card phase-card p-4">
+                        <div class="phase-number">01</div>
+                        <h4 class="mt-3">Perception</h4>
+                        <h6 class="text-primary mb-3">Vision-LiDAR Fusion</h6>
+                        <p class="text-muted">Utilizing the Japanese RDD2022 dataset mixed with our high-fidelity Indian dataset (IDS-JODHA) to move beyond 2D detection. This phase characterizes hazards in full 3D to accurately quantify geometric severity.</p>
+                    </div>
+                </div>
+                
+                <div class="col-md-4" data-aos="fade-up" data-aos-delay="200">
+                    <div class="card phase-card p-4">
+                        <div class="phase-number">02</div>
+                        <h4 class="mt-3">Prediction</h4>
+                        <h6 class="text-primary mb-3">GCN-Transformer</h6>
+                        <p class="text-muted">The core "brain" of the ADAS. We model the road scene as a dynamic graph. A hybrid GCN-Transformer architecture analyzes spatio-temporal relationships to predict evasive maneuvers before they occur.</p>
+                    </div>
+                </div>
+                
+                <div class="col-md-4" data-aos="fade-up" data-aos-delay="300">
+                    <div class="card phase-card p-4">
+                        <div class="phase-number">03</div>
+                        <h4 class="mt-3">Validation</h4>
+                        <h6 class="text-primary mb-3">VISSINITY Framework</h6>
+                        <p class="text-muted">Translating predictions into warnings. We leverage our custom VISSINITY framework—a two-way interactive driving simulator bridging Unity3D and PTV Vissim—for rigorous, human-in-the-loop validation.</p>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </section>
+
+    <section class="py-5 bg-light" id="impact">
+        <div class="container py-5">
+            <div class="row align-items-center">
+                <div class="col-lg-5 mb-5 mb-lg-0" data-aos="fade-right">
+                    <h2 class="section-title">Brain Circulation & Cross-Cultural Impact</h2>
+                    <p>Driver behavior is fundamentally shaped by cultural norms. This project merges Indian expertise in modeling complex, heterogeneous traffic with Japan's leadership in automotive technology and AI.</p>
+                    <p>By capturing and modeling these contrasting driving styles, we lay the foundation for a context-aware, globally adaptable ADAS capable of understanding different driving "dialects."</p>
+                </div>
+                <div class="col-lg-7" data-aos="fade-left">
+                    <div class="row g-4">
+                        <div class="col-md-6">
+                            <div class="culture-box">
+                                <h5 class="fw-bold">Japan</h5>
+                                <p class="text-muted small mb-0">Orderly traffic, strict lane discipline, and risk-averse driving culture. Responses to hazards are typically cautious, emphasizing braking and anticipatory maneuvers.</p>
+                            </div>
+                        </div>
+                        <div class="col-md-6">
+                            <div class="culture-box" style="border-left-color: #f59e0b;">
+                                <h5 class="fw-bold">India</h5>
+                                <p class="text-muted small mb-0">Heterogeneous traffic, weak lane discipline, and highly adaptive driving culture. Responses require rapid, improvisational swerving maneuvers in dense environments.</p>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </section>
+
+    <footer class="bg-dark text-center text-white py-4">
+        <div class="container">
+            <p class="mb-0 small text-muted">&copy; 2026 Anticipating the Swerve. Supported by the JST LOTUS Fellowship. <br>University of Tokyo & Indian Institute of Technology Jodhpur.</p>
+        </div>
+    </footer>
+
+    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.2/dist/js/bootstrap.bundle.min.js"></script>
+    <script src="https://unpkg.com/aos@2.3.1/dist/aos.js"></script>
+    <script>
+        // Initialize Animations
+        AOS.init({ once: true, offset: 50, duration: 800 });
+
+        // --- Interactive Canvas Dashboard Logic ---
+        const canvas = document.getElementById('adasCanvas');
+        const ctx = canvas.getContext('2d');
+        const slider = document.getElementById('hazardSlider');
+        const culture = document.getElementById('cultureSelect');
+        const valProb = document.getElementById('valProbability');
+        const valTime = document.getElementById('valTime');
+
+        function drawSimulation() {
+            const severity = parseInt(slider.value);
+            const isIndia = culture.value === 'india';
+            
+            // Clear Canvas
+            ctx.clearRect(0, 0, canvas.width, canvas.height);
+            
+            // Draw Road
+            ctx.fillStyle = '#475569';
+            ctx.fillRect(50, 0, 200, 350);
+            
+            // Draw Dashed Center Line
+            ctx.setLineDash([20, 15]);
+            ctx.beginPath();
+            ctx.moveTo(150, 0);
+            ctx.lineTo(150, 350);
+            ctx.strokeStyle = '#cbd5e1';
+            ctx.lineWidth = 3;
+            ctx.stroke();
+            ctx.setLineDash([]); // reset
+
+            // Draw Hazard (Pothole)
+            const hazardY = 100;
+            const hazardRadius = 10 + (severity * 2.5);
+            ctx.beginPath();
+            ctx.ellipse(150, hazardY, hazardRadius, hazardRadius * 0.6, 0, 0, Math.PI * 2);
+            ctx.fillStyle = severity > 7 ? '#ef4444' : (severity > 4 ? '#f59e0b' : '#10b981');
+            ctx.fill();
+            ctx.strokeStyle = '#000';
+            ctx.lineWidth = 2;
+            ctx.stroke();
+
+            // Calculate Predictions based on Culture & Severity
+            let swerveOffset = 0;
+            let prob = 0;
+            let timeAdvantage = 0;
+
+            if (isIndia) {
+                // Adaptive: Swerves earlier, takes wider paths
+                prob = Math.min(100, severity * 12);
+                if (severity > 2) swerveOffset = (severity * 6) + 20; 
+                timeAdvantage = (severity * 0.15) + 0.5;
+            } else {
+                // Orderly: Less likely to swerve aggressively, prefers braking unless severe
+                prob = Math.min(100, severity * 8);
+                if (severity > 5) swerveOffset = (severity * 4) + 10;
+                timeAdvantage = (severity * 0.1) + 0.3;
+            }
+
+            // Update DOM Metrics
+            valProb.innerText = Math.round(prob) + '%';
+            valTime.innerText = '+' + timeAdvantage.toFixed(1) + 's';
+            valProb.style.color = prob > 70 ? '#ef4444' : '#38bdf8';
+
+            // Draw Predicted Trajectory (The "Anticipation")
+            const startX = 150;
+            const startY = 300;
+            
+            ctx.beginPath();
+            ctx.moveTo(startX, startY);
+            
+            if (swerveOffset > 0) {
+                // Curve around hazard
+                const controlX = 150 + (swerveOffset * 1.5);
+                ctx.quadraticCurveTo(controlX, 200, 150 + swerveOffset, 50);
+            } else {
+                // Straight path (braking)
+                ctx.lineTo(150, hazardY + hazardRadius + 10);
+            }
+            
+            ctx.strokeStyle = 'rgba(56, 189, 248, 0.8)';
+            ctx.lineWidth = 4;
+            ctx.stroke();
+
+            // Draw Ego Vehicle
+            ctx.fillStyle = '#0ea5e9';
+            ctx.fillRect(135, 290, 30, 50);
+            // Draw headlights
+            ctx.fillStyle = '#fde047';
+            ctx.fillRect(135, 290, 8, 5);
+            ctx.fillRect(157, 290, 8, 5);
+        }
+
+        // Event Listeners
+        slider.addEventListener('input', drawSimulation);
+        culture.addEventListener('change', drawSimulation);
+
+        // Initial Draw
+        drawSimulation();
+    </script>
+</body>
+</html>
