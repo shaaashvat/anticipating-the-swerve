@@ -188,13 +188,13 @@
     <section class="py-5 bg-light" id="interactive-demo">
         <div class="container py-5">
             <h2 class="section-title" data-aos="fade-right">Interactive Sandbox: Dynamic Motion Simulation</h2>
-            <p class="mb-4" data-aos="fade-right" data-aos-delay="100">Adjust the parameters, select a swerve direction, and **Play Simulation** to see how the GCN-Transformer (Phase 2) analyzes the <strong>full traffic graph</strong> in motion to predict secondary collision risks.</p>
+            <p class="mb-4" data-aos="fade-right" data-aos-delay="100">Adjust the parameters, select a swerve direction, and **Play Simulation** to see how the GCN-Transformer (Phase 2) analyzes the <strong>full traffic graph</strong> in motion to predict secondary collision risks. Notice how Indian agents follow nonlinear splines (weaving), while Japanese agents follow linear paths.</p>
             
             <div class="dashboard-container" data-aos="zoom-in" data-aos-delay="200">
                 <div class="sim-area" style="position: relative;">
                     <canvas id="adasCanvas" width="300" height="400"></canvas>
                     <div id="riskAlert" class="position-absolute bottom-0 w-100 text-center py-2" style="background: rgba(239, 68, 68, 0.9); font-weight: bold; color: white; display: none; font-size: 0.9rem;">
-                        ⚠️ CRITICAL: Proactive swerve path intersects filtering agent!
+                        ⚠️ CRITICAL: Proactive swerve path intersects moving agent!
                     </div>
                 </div>
                 <div class="control-panel">
@@ -205,11 +205,11 @@
                             
                             <label for="cultureSelect" class="form-label fw-bold mt-3 text-light">Traffic Culture Model</label>
                             <select class="form-select bg-dark text-white border-secondary mb-3" id="cultureSelect">
-                                <option value="india">Heterogeneous (India) - Dense, No Lane Discipline</option>
+                                <option value="india">Heterogeneous (India) - Dense, Weaving Splines</option>
                                 <option value="japan">Orderly (Japan) - Strict Lane Discipline</option>
                             </select>
 
-                            <label for="swerveDirection" class="form-label fw-bold text-light">Swerve Direction</label>
+                            <label for="swerveDirection" class="form-label fw-bold text-light">Predicted Swerve Direction</label>
                             <select class="form-select bg-dark text-white border-secondary mb-4" id="swerveDirection">
                                 <option value="left">Evasive Swerve: LEFT</option>
                                 <option value="right">Evasive Swerve: RIGHT</option>
@@ -321,7 +321,7 @@
         // Initialize Animations
         AOS.init({ once: true, offset: 50, duration: 800 });
 
-        // --- Advanced Interactive Canvas Dashboard with Motion ---
+        // --- Advanced Interactive Canvas Dashboard with Dynamic Motion ---
         const canvas = document.getElementById('adasCanvas');
         const ctx = canvas.getContext('2d');
         const slider = document.getElementById('hazardSlider');
@@ -333,179 +333,179 @@
         const valRisk = document.getElementById('valRisk');
         const riskAlert = document.getElementById('riskAlert');
 
-        // Initial State for Simulation Area
         const coreCoords = { egoX: 100, egoY: 340, hazardX: 100, hazardY: 120 };
         let simulationTimeline;
 
-        // Drawing Helper Functions (Draws static scene or current animated frame)
+        // Visual Assets
         function drawEgoVehicle(x, y) {
-            ctx.fillStyle = '#0ea5e9'; // Blue Ego
+            ctx.fillStyle = '#0ea5e9'; 
             ctx.shadowColor = '#0284c7'; ctx.shadowBlur = 10;
-            ctx.fillRect(x - 15, y, 30, 50); ctx.shadowBlur = 0; // reset
-            ctx.fillStyle = '#fde047'; ctx.fillRect(x - 15, y, 8, 5); ctx.fillRect(x + 7, y, 8, 5); // Headlights
+            ctx.fillRect(x - 15, y, 30, 50); ctx.shadowBlur = 0; 
+            ctx.fillStyle = '#fde047'; ctx.fillRect(x - 15, y, 8, 5); ctx.fillRect(x + 7, y, 8, 5); 
         }
 
-        function drawAuto(x, y) { // Heterogeneous agent
+        function drawAuto(x, y) { 
             ctx.fillStyle = '#eab308'; ctx.fillRect(x - 14, y, 28, 35); ctx.fillStyle = '#1e293b'; ctx.fillRect(x - 12, y + 5, 24, 8);
         }
 
-        function drawBike(x, y) { // Vulnerable agent
-            ctx.fillStyle = '#10b981'; ctx.beginPath(); ctx.arc(x, y + 15, 6, 0, Math.PI * 2); ctx.fill(); // Helmet
-            ctx.fillStyle = '#334155'; ctx.fillRect(x - 3, y + 5, 6, 25); // Bike body
+        function drawBike(x, y) { 
+            ctx.fillStyle = '#10b981'; ctx.beginPath(); ctx.arc(x, y + 15, 6, 0, Math.PI * 2); ctx.fill(); 
+            ctx.fillStyle = '#334155'; ctx.fillRect(x - 3, y + 5, 6, 25); 
         }
 
-        function drawCar(x, y, color) { // Orderly agent
+        function drawCar(x, y, color) { 
             ctx.fillStyle = color; ctx.fillRect(x - 12, y, 24, 45); ctx.fillStyle = '#94a3b8'; ctx.fillRect(x - 10, y + 10, 20, 12);
         }
 
-        // Logic to draw the *current state* of the world (including static context agents)
+        // Render the scene at a specific time (progress = 0.0 to 1.0)
         function drawSimulationScene(animateProps) {
-            ctx.clearRect(0, 0, canvas.width, canvas.height); // Clear Canvas
+            ctx.clearRect(0, 0, canvas.width, canvas.height); 
             const severity = parseInt(slider.value);
             const isIndia = culture.value === 'india';
+            const p = animateProps.progress; // Animation progression
             
             // Draw Road
             ctx.fillStyle = '#334155'; ctx.fillRect(40, 0, 220, 400);
             
-            // Draw Dashed Lines (Lane markings)
+            // Draw Dashed Lines with scrolling effect
+            ctx.lineDashOffset = -p * 200; 
             ctx.setLineDash([20, 15]); ctx.beginPath(); ctx.moveTo(150, 0); ctx.lineTo(150, 400);
-            ctx.strokeStyle = '#cbd5e1'; ctx.lineWidth = 3; ctx.stroke(); ctx.setLineDash([]); // reset
+            ctx.strokeStyle = '#cbd5e1'; ctx.lineWidth = 3; ctx.stroke(); ctx.setLineDash([]); 
 
-            // Draw Hazard
+            // Draw Hazard (Moves slightly down to simulate camera moving forward)
+            const hzY = coreCoords.hazardY + (p * 50);
             const hazardRadius = 8 + (severity * 2.5); ctx.beginPath();
-            ctx.ellipse(coreCoords.hazardX, coreCoords.hazardY, hazardRadius, hazardRadius * 0.7, 0, 0, Math.PI * 2);
+            ctx.ellipse(coreCoords.hazardX, hzY, hazardRadius, hazardRadius * 0.7, 0, 0, Math.PI * 2);
             ctx.fillStyle = severity > 7 ? '#ef4444' : (severity > 4 ? '#f59e0b' : '#3b82f6');
             ctx.fill(); ctx.strokeStyle = 'rgba(0,0,0,0.5)'; ctx.lineWidth = 2; ctx.stroke();
 
-            // Draw Static Contextual Agents (The "full graph" background)
+            // --- THE MAGIC: Dynamic Contextual Agents ---
             if (isIndia) {
-                // Bikes filtering, Autos misaligned
-                drawBike(135, 220); // FILTERING
-                drawAuto(165, 80); // LEAD AUTO
-                drawBike(60, 260); // LEFT PASSING
+                // HETEROGENEOUS: Non-linear motion using Math.sin/cos (Splines)
+                
+                // Bike 1: Filtering the center line, weaving
+                let bike1X = 135 + Math.sin(p * Math.PI * 4) * 18; 
+                let bike1Y = 220 + (p * 100); 
+                drawBike(bike1X, bike1Y);
+
+                // Auto: Wandering slightly in the right lane
+                let autoX = 165 + Math.cos(p * Math.PI * 2) * 12;
+                let autoY = 80 + (p * 140);
+                drawAuto(autoX, autoY);
+
+                // Bike 2: Passing aggressively on the left edge
+                let bike2X = 55 + Math.sin(p * Math.PI * 6) * 10;
+                let bike2Y = 280 + (p * 80);
+                drawBike(bike2X, bike2Y);
+
             } else {
-                // Cars in next lane
-                drawCar(200, 150, '#64748b'); // LEAD CAR ADJ
-                drawCar(200, 300, '#475569'); // TRAIL CAR ADJ
+                // ORDERLY: Perfect straight-line kinematics
+                let car1Y = 150 + (p * 120);
+                drawCar(200, car1Y, '#64748b'); // Lead Car
+                
+                let car2Y = 300 + (p * 120);
+                drawCar(200, car2Y, '#475569'); // Trailing Car
             }
 
-            // Draw Ego Vehicle at its *current* animated position
+            // Draw Predicted Trajectory Line (Fades out as ego moves)
+            ctx.beginPath();
+            ctx.moveTo(coreCoords.egoX, coreCoords.egoY);
+            const plan = calculatePlan();
+            if (plan.swerveOffset !== 0) {
+                ctx.quadraticCurveTo(coreCoords.egoX + (plan.swerveOffset * 1.5), 220, coreCoords.egoX + plan.swerveOffset, 60);
+                ctx.strokeStyle = plan.risk ? 'rgba(239, 68, 68, 0.4)' : 'rgba(56, 189, 248, 0.4)';
+            } else {
+                ctx.lineTo(coreCoords.egoX, hzY + hazardRadius + 15);
+                ctx.strokeStyle = 'rgba(16, 185, 129, 0.4)'; 
+            }
+            ctx.lineWidth = 4; ctx.setLineDash([8, 6]); ctx.stroke(); ctx.setLineDash([]);
+
+            // Draw Ego Vehicle at its simulated position
             drawEgoVehicle(animateProps.x, animateProps.y);
         }
 
-        // Calculate and Draw the *Plan* (Predicted Proactive Trajectory)
-        function updatePredictions() {
+        // Logic Model (The "GCN-Transformer")
+        function calculatePlan() {
             const severity = parseInt(slider.value);
             const isIndia = culture.value === 'india';
             const swerveLeft = direction.value === 'left';
             
-            // Core Predictive Calculations
             let prob = 0; let swerveOffset = 0; let timeGain = 0; let risk = false;
             
-            if (isIndia) { // Adaptive Dialect
+            if (isIndia) { 
                 prob = Math.min(95, severity * 12);
-                if (severity > 2) swerveOffset = (swerveLeft ? -1 : 1) * ((severity * 5) + 10); // India swerves harder/closer
+                if (severity > 2) swerveOffset = (swerveLeft ? -1 : 1) * ((severity * 5) + 15); 
                 timeGain = (severity * 0.15) + 0.4;
-                // India Risk: Hits bike at 135 filtering lane line?
-                if (prob > 50 && direction.value === 'right' && swerveOffset > 20) { risk = true; }
-            } else { // Orderly Dialect
+                // Risk threshold: Swerving right into the weaving bike/auto
+                if (prob > 50 && direction.value === 'right' && swerveOffset > 15) { risk = true; }
+                // Risk threshold: Swerving left into the passing bike
+                if (prob > 50 && direction.value === 'left' && swerveOffset < -25) { risk = true; }
+            } else { 
                 prob = Math.min(85, severity * 8);
-                if (severity > 5) swerveOffset = (swerveLeft ? -1 : 1) * ((severity * 4) + 5); // Japan cautious
+                if (severity > 5) swerveOffset = (swerveLeft ? -1 : 1) * ((severity * 4) + 5); 
                 timeGain = (severity * 0.1) + 0.2;
-                // Japan Risk: Crossed line into adjacent lead car (x=200)?
-                if (prob > 70 && direction.value === 'right' && coreCoords.egoX + swerveOffset > 175) { risk = true; }
+                // Risk threshold: Swerving right across strict lane line
+                if (prob > 70 && direction.value === 'right' && coreCoords.egoX + swerveOffset > 170) { risk = true; }
             }
-
-            // Update DOM Metrics
-            valProb.innerText = Math.round(prob) + '%';
-            valTime.innerText = '+' + timeGain.toFixed(1) + 's';
-            valProb.style.color = prob > 75 ? '#ef4444' : '#38bdf8';
-            if (risk) { valRisk.innerText = 'HIGH'; valRisk.style.color = '#ef4444'; riskAlert.style.display = 'block'; }
-            else { valRisk.innerText = 'LOW'; valRisk.style.color = '#10b981'; riskAlert.style.display = 'none'; }
-
-            return { swerveOffset, risk };
+            return { prob, swerveOffset, timeGain, risk };
         }
 
-        // Initial setup/reset for the scene
         function resetSimulation() {
-            // Ensure no animation is running
             if (simulationTimeline) { simulationTimeline.pause(); simulationTimeline = null; }
             riskAlert.style.display = 'none';
             playBtn.innerText = "▶ Play Simulation"; playBtn.disabled = false;
             
-            // Initial render of static vehicles at start positions
-            updatePredictions();
-            drawSimulationScene({ x: coreCoords.egoX, y: coreCoords.egoY });
-        }
-
-        // The Motion Simulation Function
-        function runSimulation() {
-            // Pre-calculation
-            const { swerveOffset, risk } = updatePredictions();
-            const animateState = { x: coreCoords.egoX, y: coreCoords.egoY };
-            playBtn.innerText = "Simulating..."; playBtn.disabled = true;
-
-            // Define custom path for anime.js S-curve swerve
-            const pathPoints = [];
-            const steps = 60; // Simulation frames
+            const plan = calculatePlan();
+            valProb.innerText = Math.round(plan.prob) + '%';
+            valTime.innerText = '+' + plan.timeGain.toFixed(1) + 's';
+            valProb.style.color = plan.prob > 75 ? '#ef4444' : '#38bdf8';
             
-            for (let i = 0; i <= steps; i++) {
-                const percent = i / steps;
-                let currentX = coreCoords.egoX;
-                
-                // Pothole collision check zone: y=120
-                if (animateState.y < coreCoords.egoY - 30 && animateState.y > coreCoords.hazardY) {
-                    // Start swerving after approaching, but before pothole center
-                    if (Math.abs(swerveOffset) > 0) {
-                        const swerveStartPercent = 0.3; // When swerve begins
-                        const swerveProgress = Math.max(0, (percent - swerveStartPercent) / (0.8 - swerveStartPercent)); // linear swerve over middle section
-                        currentX += swerveOffset * swerveProgress; 
-                    }
-                }
-                
-                // Track risk collision point dynamically (e.g., at y=220)
-                if (risk && animateState.y < 230 && animateState.y > 210) {
-                    if (Math.abs(coreCoords.egoX - currentX) > Math.abs(swerveOffset) * 0.9) {
-                        // Mark point of intersection for GCN risk marker
-                        console.log("Collision Point Detected: x=" + currentX);
-                    }
-                }
-            }
+            if (plan.risk) { valRisk.innerText = 'HIGH'; valRisk.style.color = '#ef4444'; riskAlert.style.display = 'block'; }
+            else { valRisk.innerText = 'LOW'; valRisk.style.color = '#10b981'; riskAlert.style.display = 'none'; }
 
-            // Create anime.js timeline driven by standard physics (straight-line approach, then s-curve)
-            simulationTimeline = anime.timeline({
-                easing: 'easeInOutQuad',
-                duration: 2500, // 2.5s simulation
-                update: () => drawSimulationScene(animateState), // Redraw every frame
-                complete: resetSimulation // Reset controls after run
-            });
-
-            // APPROACH POTHOLE (Approach zone)
-            simulationTimeline.add({
-                targets: animateState,
-                y: 190, // approached hazard
-                duration: 1000
-            });
-
-            // EVASIVE SWERVE & PASS (The S-Curve)
-            simulationTimeline.add({
-                targets: animateState,
-                y: 60, // Passed hazard zone
-                x: coreCoords.egoX + swerveOffset, // End of evasive swerve
-                duration: 1000
-            }, '-=200'); // small overlap for smoothness
-
-            // BRAKING (If no swerve path chosen)
-            // (Standard ADAS Reactive braking logic could go here, if probability was low)
+            drawSimulationScene({ x: coreCoords.egoX, y: coreCoords.egoY, progress: 0 });
         }
 
-        // Event Listeners for controls
+        function runSimulation() {
+            const plan = calculatePlan();
+            const animateState = { x: coreCoords.egoX, y: coreCoords.egoY, progress: 0 };
+            playBtn.innerText = "Simulating Real-time Graph..."; playBtn.disabled = true;
+
+            simulationTimeline = anime.timeline({
+                easing: 'linear', // Use linear to smoothly pass progress to trigonometric splines
+                duration: 3000, 
+                update: function(anim) {
+                    animateState.progress = anim.progress / 100;
+                    
+                    // Ego X Physics: Apply Swerve over the middle 40% of the animation
+                    let p = animateState.progress;
+                    if (p > 0.3 && p < 0.7 && Math.abs(plan.swerveOffset) > 0) {
+                        let swervePercent = (p - 0.3) / 0.4;
+                        // Smooth S-Curve easing
+                        let easeSwerve = swervePercent < 0.5 ? 2 * swervePercent * swervePercent : -1 + (4 - 2 * swervePercent) * swervePercent;
+                        animateState.x = coreCoords.egoX + (plan.swerveOffset * easeSwerve);
+                    }
+                    
+                    drawSimulationScene(animateState);
+                },
+                complete: resetSimulation
+            });
+
+            // Ego Y Physics: Drive forward
+            simulationTimeline.add({
+                targets: animateState,
+                y: 40,
+                duration: 3000
+            });
+        }
+
+        // Event Listeners
         slider.addEventListener('input', resetSimulation);
         culture.addEventListener('change', resetSimulation);
         direction.addEventListener('change', resetSimulation);
         playBtn.addEventListener('click', runSimulation);
 
-        // Initial setup
+        // Init
         resetSimulation();
     </script>
 </body>
