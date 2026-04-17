@@ -205,3 +205,28 @@ cython_debug/
 marimo/_static/
 marimo/_lsp/
 __marimo__/
+
+
+
+
+# Python / ML
+__pycache__/
+*.py[cod]
+*venv/
+*.h5
+*.pt
+*.pth
+
+# Massive Datasets (Keep these local or on an external drive!)
+data/*.mp4
+data/*.bag
+data/*.pcd
+data/*.jpg
+data/*.png
+
+# Unity & Vissim Temp Files
+simulation/[Ll]ibrary/
+simulation/[Tt]emp/
+simulation/[Oo]bj/
+simulation/[Bb]uilds/
+*.inpx~
