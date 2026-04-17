@@ -279,7 +279,189 @@
             </div>
         </div>
     </section>
+    <section class="py-5" id="gcn-prototype" style="background-color: #0b1120; border-top: 1px solid #1e293b; border-bottom: 1px solid #1e293b;">
+        <div class="container py-5">
+            <div class="text-center mb-5" data-aos="fade-up">
+                <div class="hero-badge" style="background: rgba(16, 185, 129, 0.1); color: #10b981; border-color: #10b981;">Phase 2 Prototype Live</div>
+                <h2 class="section-title text-white d-inline-block position-relative">Spatial Interaction Graphs</h2>
+                <p class="lead text-light opacity-75 mt-3">How the AI sees the road. Adjust the receptive field to see how the GCN-Transformer draws proximity edges between dynamic agents in real-time.</p>
+                
+                <div class="mx-auto mt-4" style="max-width: 400px;">
+                    <label for="gcnRadiusSlider" class="form-label text-light fw-bold">GCN Receptive Field (Interaction Radius)</label>
+                    <input type="range" class="form-range" id="gcnRadiusSlider" min="50" max="250" value="120">
+                </div>
+            </div>
+            
+            <div class="row g-4 text-center">
+                <div class="col-lg-6" data-aos="fade-right">
+                    <h4 class="text-white mb-3">Orderly Traffic (Japan)</h4>
+                    <p class="text-muted small">Strict lane discipline creates straightforward, linear interaction graphs.</p>
+                    <div style="background: #1e293b; border-radius: 12px; padding: 15px; box-shadow: inset 0 0 20px rgba(0,0,0,0.5);">
+                        <canvas id="canvasJapan" width="400" height="500" style="max-width: 100%; border-radius: 8px; background: #0f172a;"></canvas>
+                    </div>
+                </div>
+                
+                <div class="col-lg-6" data-aos="fade-left">
+                    <h4 class="text-white mb-3">Heterogeneous Traffic (India)</h4>
+                    <p class="text-muted small">High density and weaving trajectories create highly complex, shifting webs.</p>
+                    <div style="background: #1e293b; border-radius: 12px; padding: 15px; box-shadow: inset 0 0 20px rgba(0,0,0,0.5);">
+                        <canvas id="canvasIndia" width="400" height="500" style="max-width: 100%; border-radius: 8px; background: #0f172a;"></canvas>
+                    </div>
+                </div>
+            </div>
+            
+            <div class="d-flex justify-content-center mt-4 gap-4 flex-wrap" data-aos="fade-up">
+                <span class="text-light small"><span style="display:inline-block; width:12px; height:12px; border-radius:50%; background:#38bdf8; margin-right:5px;"></span> Car (Node)</span>
+                <span class="text-light small"><span style="display:inline-block; width:12px; height:12px; border-radius:50%; background:#10b981; margin-right:5px;"></span> 2-Wheeler (Node)</span>
+                <span class="text-light small"><span style="display:inline-block; width:12px; height:12px; border-radius:50%; background:#facc15; margin-right:5px;"></span> Auto (Node)</span>
+                <span class="text-light small"><span style="display:inline-block; width:12px; height:12px; border-radius:50%; background:#ef4444; margin-right:5px;"></span> Bus (Node)</span>
+                <span class="text-light small"><span style="display:inline-block; width:20px; height:2px; background:rgba(255,255,255,0.4); margin-right:5px; vertical-align:middle;"></span> Interaction Edge</span>
+            </div>
+        </div>
+    </section>
 
+    <script>
+        (function() {
+            const canvasJP = document.getElementById('canvasJapan');
+            const ctxJP = canvasJP.getContext('2d');
+            const canvasIN = document.getElementById('canvasIndia');
+            const ctxIN = canvasIN.getContext('2d');
+            const radiusSlider = document.getElementById('gcnRadiusSlider');
+
+            // Agent Classes
+            class GCNAgent {
+                constructor(x, y, type, speed, weaveAmp = 0, weaveFreq = 0) {
+                    this.baseX = x;
+                    this.x = x;
+                    this.y = y;
+                    this.type = type;
+                    this.speed = speed;
+                    this.weaveAmp = weaveAmp;
+                    this.weaveFreq = weaveFreq;
+                    this.time = Math.random() * 1000;
+                    
+                    switch(type) {
+                        case 'car': this.color = '#38bdf8'; this.radius = 8; break;
+                        case 'bike': this.color = '#10b981'; this.radius = 5; break;
+                        case 'auto': this.color = '#facc15'; this.radius = 7; break;
+                        case 'bus': this.color = '#ef4444'; this.radius = 12; break;
+                    }
+                }
+                
+                update() {
+                    this.time += 1;
+                    this.y -= this.speed; // Move up the screen
+                    this.x = this.baseX + Math.sin(this.time * this.weaveFreq) * this.weaveAmp;
+                    
+                    // Loop back to bottom
+                    if (this.y < -50) {
+                        this.y = canvasJP.height + 50;
+                        this.baseX = this.baseX + (Math.random() * 20 - 10); // Slight x shift on respawn
+                        // Constrain base X to road bounds
+                        if(this.baseX < 50) this.baseX = 50;
+                        if(this.baseX > 350) this.baseX = 350;
+                    }
+                }
+                
+                draw(ctx) {
+                    // Draw glow
+                    ctx.beginPath();
+                    ctx.arc(this.x, this.y, this.radius * 2, 0, Math.PI * 2);
+                    ctx.fillStyle = this.color + '40'; // 25% opacity hex
+                    ctx.fill();
+                    // Draw core
+                    ctx.beginPath();
+                    ctx.arc(this.x, this.y, this.radius, 0, Math.PI * 2);
+                    ctx.fillStyle = this.color;
+                    ctx.fill();
+                    ctx.strokeStyle = '#fff';
+                    ctx.lineWidth = 1;
+                    ctx.stroke();
+                }
+            }
+
+            // Japan Agents: Orderly, straight lines, uniform spacing, mostly cars
+            const agentsJP = [
+                new GCNAgent(100, 400, 'car', 1.5),
+                new GCNAgent(100, 200, 'car', 1.5),
+                new GCNAgent(100, 0, 'car', 1.5),
+                new GCNAgent(200, 450, 'car', 1.8),
+                new GCNAgent(200, 250, 'car', 1.8),
+                new GCNAgent(200, 50, 'car', 1.8),
+                new GCNAgent(300, 350, 'car', 1.2),
+                new GCNAgent(300, 150, 'car', 1.2)
+            ];
+
+            // India Agents: Dense, high speed variance, heavy weaving, multi-modal
+            const agentsIN = [
+                new GCNAgent(150, 480, 'bus', 1.0, 5, 0.01),
+                new GCNAgent(80, 420, 'auto', 1.6, 20, 0.03),
+                new GCNAgent(220, 380, 'car', 1.8, 15, 0.02),
+                new GCNAgent(60, 350, 'bike', 2.5, 30, 0.05),
+                new GCNAgent(320, 320, 'bike', 2.6, 25, 0.04),
+                new GCNAgent(180, 280, 'auto', 1.4, 18, 0.025),
+                new GCNAgent(120, 220, 'bike', 2.2, 35, 0.06),
+                new GCNAgent(260, 180, 'car', 1.9, 10, 0.015),
+                new GCNAgent(160, 120, 'bike', 2.4, 40, 0.045),
+                new GCNAgent(90, 80, 'auto', 1.5, 15, 0.03),
+                new GCNAgent(290, 50, 'bike', 2.7, 20, 0.05),
+                new GCNAgent(200, 10, 'bus', 1.1, 8, 0.01)
+            ];
+
+            function drawNetwork(ctx, canvas, agents) {
+                const radius = parseInt(radiusSlider.value);
+                
+                // Clear Canvas
+                ctx.clearRect(0, 0, canvas.width, canvas.height);
+                
+                // Draw subtle road lines
+                ctx.strokeStyle = '#334155';
+                ctx.lineWidth = 2;
+                ctx.setLineDash([15, 15]);
+                ctx.beginPath();
+                ctx.moveTo(canvas.width / 3, 0); ctx.lineTo(canvas.width / 3, canvas.height);
+                ctx.moveTo((canvas.width / 3) * 2, 0); ctx.lineTo((canvas.width / 3) * 2, canvas.height);
+                ctx.stroke();
+                ctx.setLineDash([]); // reset
+                
+                // Update and Draw Edges (Graph Connections)
+                for (let i = 0; i < agents.length; i++) {
+                    agents[i].update(); // update position
+                    
+                    for (let j = i + 1; j < agents.length; j++) {
+                        const dx = agents[i].x - agents[j].x;
+                        const dy = agents[i].y - agents[j].y;
+                        const dist = Math.sqrt(dx*dx + dy*dy);
+                        
+                        if (dist < radius) {
+                            // Calculate opacity based on distance (closer = brighter)
+                            const opacity = 1 - (dist / radius);
+                            ctx.beginPath();
+                            ctx.moveTo(agents[i].x, agents[i].y);
+                            ctx.lineTo(agents[j].x, agents[j].y);
+                            ctx.strokeStyle = `rgba(148, 163, 184, ${opacity})`;
+                            ctx.lineWidth = opacity * 2;
+                            ctx.stroke();
+                        }
+                    }
+                }
+                
+                // Draw Nodes on top of edges
+                agents.forEach(agent => agent.draw(ctx));
+            }
+
+            // Animation Loop
+            function animateGCN() {
+                drawNetwork(ctxJP, canvasJP, agentsJP);
+                drawNetwork(ctxIN, canvasIN, agentsIN);
+                requestAnimationFrame(animateGCN);
+            }
+
+            // Start animation
+            animateGCN();
+        })();
+    </script>
+    
     <section class="py-5 bg-light" id="impact">
         <div class="container py-5">
             <div class="row align-items-center">
