@@ -189,7 +189,7 @@
     <section class="py-5 bg-light" id="interactive-demo">
         <div class="container py-5">
             <h2 class="section-title" data-aos="fade-right">Interactive Sandbox: Dynamic Motion Simulation</h2>
-            <p class="mb-4" data-aos="fade-right" data-aos-delay="100">Adjust the parameters, select a swerve direction, and **Play Simulation** to see how the GCN-Transformer (Phase 2) analyzes the <strong>full traffic graph</strong> in motion to predict secondary collision risks. Notice how Indian agents follow nonlinear splines (weaving), while Japanese agents follow linear paths.</p>
+            <p class="mb-4" data-aos="fade-right" data-aos-delay="100">Adjust the parameters, select a swerve direction, and Play Simulation to see how the GCN-Transformer (Phase 2) analyzes the <strong>full traffic graph</strong> in motion to predict secondary collision risks. Notice how Indian agents follow nonlinear splines (weaving), while Japanese agents follow linear paths.</p>
             
             <div class="dashboard-container" data-aos="zoom-in" data-aos-delay="200">
                 <div class="sim-area" style="position: relative;">
@@ -206,7 +206,7 @@
                             
                             <label for="cultureSelect" class="form-label fw-bold mt-3 text-light">Traffic Culture Model</label>
                             <select class="form-select bg-dark text-white border-secondary mb-3" id="cultureSelect">
-                                <option value="india">Heterogeneous (India) - Dense, Weaving Splines</option>
+                                <option value="india">Disorderly (India) - Dense, Weaving Splines</option>
                                 <option value="japan">Orderly (Japan) - Strict Lane Discipline</option>
                             </select>
 
@@ -296,15 +296,15 @@
             <div class="row g-4 text-center">
                 <div class="col-lg-6" data-aos="fade-right">
                     <h4 class="text-white mb-3">Orderly Traffic (Japan)</h4>
-                    <p class="text-muted small">Strict lane discipline creates straightforward, linear interaction graphs.</p>
+                    <p class="text-white small">Strict lane discipline creates straightforward, linear interaction graphs.</p>
                     <div style="background: #1e293b; border-radius: 12px; padding: 15px; box-shadow: inset 0 0 20px rgba(0,0,0,0.5);">
                         <canvas id="canvasJapan" width="400" height="500" style="max-width: 100%; border-radius: 8px; background: #0f172a;"></canvas>
                     </div>
                 </div>
                 
                 <div class="col-lg-6" data-aos="fade-left">
-                    <h4 class="text-white mb-3">Heterogeneous Traffic (India)</h4>
-                    <p class="text-muted small">High density and weaving trajectories create highly complex, shifting webs.</p>
+                    <h4 class="text-white mb-3">Disorderly Traffic (India)</h4>
+                    <p class="text-white small">High density and weaving trajectories create highly complex, shifting webs.</p>
                     <div style="background: #1e293b; border-radius: 12px; padding: 15px; box-shadow: inset 0 0 20px rgba(0,0,0,0.5);">
                         <canvas id="canvasIndia" width="400" height="500" style="max-width: 100%; border-radius: 8px; background: #0f172a;"></canvas>
                     </div>
